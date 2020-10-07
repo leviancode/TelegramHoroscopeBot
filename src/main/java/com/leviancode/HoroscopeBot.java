@@ -1,3 +1,4 @@
+package com.leviancode;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -239,6 +240,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
     }
 
     public static void main(String[] args) {
+        LOGGER.info("Telegram Horoscope Bot started to configure...");
+
         String propsPath = "src/main/resources/botconfig.properties";
         Properties props = new Properties();
         try {
@@ -259,5 +262,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         } catch (TelegramApiRequestException e) {
             e.printStackTrace();
         }
+
+        LOGGER.info("Bot has been successfully configured.");
+        LOGGER.info("Bot is running...");
     }
 }

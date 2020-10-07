@@ -13,6 +13,7 @@ src/main/resources/botconfig.properties
 *.iws
 *.class
 *.log
+*.lck
 
 # Datasource local storage ignored files
 /dataSources/

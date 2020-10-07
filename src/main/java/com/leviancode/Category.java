@@ -1,3 +1,5 @@
+package com.leviancode;
+
 public enum Category {
     GENERAL("Общий","c"),
     LOVE("Любовь", "l"),

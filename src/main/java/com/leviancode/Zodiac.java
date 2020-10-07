@@ -1,3 +1,5 @@
+package com.leviancode;
+
 public enum Zodiac {
     ARIES("Овен", "♈️ *Овен* (21 марта — 20 апреля)", "https://goroskop.i.ua/aries/%s/"),
     TAURUS ("Телец", "♉️ *Телец* (21 апреля — 20 мая)", "https://goroskop.i.ua/taurus/%s/"),
