@@ -2,7 +2,9 @@
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -15,7 +17,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.FileHandler;
@@ -24,20 +28,22 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class HoroscopeBot extends TelegramLongPollingBot {
-    private static final String TOKEN = "1217201362:AAGX3kOYrbPoXPbUhsshwtJROme4IKNUutM";
-    private static final String USERNAME = "dailyhoroscopes_bot";
+    private final String TOKEN;
+    private final String USERNAME;
 
     private static final String WELCOME = "Приветствую! Напиши свой знак или выбери из списка.";
     private static final String OOPS = "Не выдумывай. Дай мне существующий знак.";
 
     private static final Map<User, Map<Integer, Zodiac>> REQUESTS = new HashMap<>();  // key: user from, value: request history: message id + zodiac
     private static final Logger LOGGER = Logger.getLogger(HoroscopeBot.class.getSimpleName());
-    private static final String LOG_PATH = "src/main/resources/horoscope_bot.log";
     private long requestCount = 0;
 
-    public HoroscopeBot() {
+    public HoroscopeBot(String token, String username, String logPath) {
+        this.TOKEN = token;
+        this.USERNAME = username;
+
         try {
-            FileHandler fh = new FileHandler(LOG_PATH, 10000, 1, true);
+            FileHandler fh = new FileHandler(logPath, 10000, 1, true);
             fh.setFormatter(new SimpleFormatter());
             LOGGER.addHandler(fh);
         } catch (IOException e) {
@@ -222,7 +228,6 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         return responseBuilder.toString();
     }
 
-
     @Override
     public String getBotUsername() {
         return USERNAME;
@@ -233,4 +238,26 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         return TOKEN;
     }
 
+    public static void main(String[] args) {
+        String propsPath = "src/main/resources/botconfig.properties";
+        Properties props = new Properties();
+        try {
+            props.load(new FileReader(propsPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String token = props.getProperty("token");
+        String username = props.getProperty("username");
+        String logPath = props.getProperty("logPath");
+
+        ApiContextInitializer.init();
+
+        TelegramBotsApi botsApi = new TelegramBotsApi();
+        try {
+            botsApi.registerBot(new HoroscopeBot(token, username, logPath));
+        } catch (TelegramApiRequestException e) {
+            e.printStackTrace();
+        }
+    }
 }
