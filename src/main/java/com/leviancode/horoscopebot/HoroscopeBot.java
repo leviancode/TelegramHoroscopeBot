@@ -13,6 +13,7 @@ import org.jsoup.select.Elements;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -33,6 +34,15 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Telegram Horoscope Bot
+ *
+ * The bot receives the zodiac sign from the user
+ * and returns the horoscope for today from https://goroskop.i.ua/
+ *
+ * @author Dmitry Levian
+ */
+
 public class HoroscopeBot extends TelegramLongPollingBot {
     private static String PROPERTIES_PATH = "src/main/resources/botconfig.properties";
 
@@ -49,6 +59,12 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
     private long requestCount = 0;
 
+    /**
+     * HoroscopeBot constructor
+     * @param token unique string which BotFather gave to you when you created a bot
+     * @param username bot username
+     * @param mongoUri uri to mongoDB Atlas connection
+     */
     public HoroscopeBot(String token, String username, String mongoUri) {
         this.TOKEN = token;
         this.USERNAME = username;
@@ -93,7 +109,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
                     sendMessage.setText(getHoroscope(zodiac, Category.GENERAL));
                     sendMessage.setReplyMarkup(getInlineKeyboardMarkup(Category.GENERAL));
-                    sendMessage.setParseMode("markdown");
+                    sendMessage.setParseMode(ParseMode.MARKDOWN);
 
                     addRequest(user.getId(), message.getMessageId(), zodiac);
                     updateDB(user);
@@ -112,23 +128,27 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         // if update has not message, check maybe it has a callbackQuery (tap on inlineButton)
         } else if (update.hasCallbackQuery()) {
             CallbackQuery callbackquery = update.getCallbackQuery();
-            User user = callbackquery.getFrom();
             String data = callbackquery.getData();
-            int messageId = callbackquery.getMessage().getMessageId();
 
             // check if callbackQuery is not current
             if (!data.contains("_")){
+                User user = callbackquery.getFrom();
+                int messageId = callbackquery.getMessage().getMessageId();
                 Category category = Category.valueOfLabel(data);
-                String horoscope = getHoroscope(REQUESTS.get(user.getId()).get(messageId), category);
-
                 EditMessageText editMessageText = new EditMessageText();
                 editMessageText.setChatId(callbackquery.getMessage().getChatId());
                 editMessageText.setMessageId(messageId);
                 editMessageText.setInlineMessageId(callbackquery.getInlineMessageId());
-                editMessageText.setText(horoscope);
-                editMessageText.setParseMode("markdown");
-                editMessageText.setReplyMarkup(getInlineKeyboardMarkup(category));
+                editMessageText.setParseMode(ParseMode.MARKDOWN);
 
+                String response = "Неа. Отправь новый запрос.";
+                Zodiac zodiac = REQUESTS.get(user.getId()).get(messageId);
+                if (zodiac != null){
+                    response = getHoroscope(zodiac, category);
+                    editMessageText.setReplyMarkup(getInlineKeyboardMarkup(category));
+                }
+
+                editMessageText.setText(response);
                 try {
                     execute(editMessageText);
                 } catch (TelegramApiException e) {
@@ -157,7 +177,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
     /**
      * Log user's messages
      * @param user who send a message
-     * @param request is text of user's message
+     * @param request text of user's message
      */
     private void logging (User user, String request){
         requestCount++;
@@ -225,8 +245,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
     /**
      *
-     * @param zodiac is one of 12 zodiacs
-     * @param category is category of horoscope
+     * @param zodiac one of 12 zodiacs
+     * @param category category of horoscope
      * @return text of horoscope
      */
     private String getHoroscope(Zodiac zodiac, Category category){
