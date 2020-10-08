@@ -1,4 +1,4 @@
-package com.leviancode;
+package com.leviancode.horoscopebot;
 
 public enum Category {
     GENERAL("Общий","c"),

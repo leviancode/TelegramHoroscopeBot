@@ -1,4 +1,4 @@
-package com.leviancode;
+package com.leviancode.horoscopebot;
 
 public enum Zodiac {
     ARIES("Овен", "♈️ *Овен* (21 марта — 20 апреля)", "https://goroskop.i.ua/aries/%s/"),
