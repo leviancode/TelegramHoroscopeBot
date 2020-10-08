@@ -11,7 +11,7 @@
 
     <groupId>com.leviancode</groupId>
     <artifactId>HoroscopeBot</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
 
     <build>
             <plugins>
@@ -84,11 +84,11 @@
             <version>1.7.30</version>
         </dependency>
 
-        <!--<dependency>
+        <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>3.12.7</version>
-        </dependency>-->
+        </dependency>
 
     </dependencies>
 

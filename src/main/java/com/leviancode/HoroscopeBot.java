@@ -1,7 +1,14 @@
 package com.leviancode;
 
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -29,27 +36,40 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class HoroscopeBot extends TelegramLongPollingBot {
+    private static String PROPERTIES_PATH = "src/main/resources/botconfig.properties";
+
     private final String TOKEN;
     private final String USERNAME;
 
-    private static final String WELCOME = "Приветствую! Напиши свой знак или выбери из списка.";
-    private static final String OOPS = "Не выдумывай. Дай мне существующий знак.";
+    private final String WELCOME = "Приветствую! Напиши свой знак или выбери из списка.";
+    private final String OOPS = "Не выдумывай. Дай мне существующий знак.";
 
-    private static final Map<User, Map<Integer, Zodiac>> REQUESTS = new HashMap<>();  // key: user from, value: request history: message id + zodiac
+    // Map to store last user's request. Key: userId, value: map: message id + zodiac
+    private Map<Integer, Map<Integer, Zodiac>> REQUESTS = new HashMap<>();
     private static final Logger LOGGER = Logger.getLogger(HoroscopeBot.class.getSimpleName());
+    private MongoDatabase database;
+
     private long requestCount = 0;
 
-    public HoroscopeBot(String token, String username, String logPath) {
+    public HoroscopeBot(String token, String username, String mongoUri) {
         this.TOKEN = token;
         this.USERNAME = username;
 
+        setupMongoDB(mongoUri);
+    }
+
+    private void setupMongoDB(String mongoUri){
+        MongoClientURI uri = new MongoClientURI(mongoUri);
+
+        MongoClient mongoClient = new MongoClient(uri);
+        database = mongoClient.getDatabase("horoscopeBot");
+
         try {
-            FileHandler fh = new FileHandler(logPath, 10000, 1, true);
-            fh.setFormatter(new SimpleFormatter());
-            LOGGER.addHandler(fh);
-        } catch (IOException e) {
-            e.printStackTrace();
+            database.getCollection("users");
+        } catch (IllegalArgumentException e) {
+            database.createCollection("users");
         }
+
     }
 
     @Override
@@ -77,7 +97,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
                     sendMessage.setReplyMarkup(getInlineKeyboardMarkup(Category.GENERAL));
                     sendMessage.setParseMode("markdown");
 
-                    addRequest(user, message.getMessageId(), zodiac);
+                    addRequest(user.getId(), message.getMessageId(), zodiac);
+                    updateDB(user);
                 }catch (IllegalArgumentException e){
                     sendMessage.setText(OOPS);
                 }
@@ -100,7 +121,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
             // check if callbackQuery is not current
             if (!data.contains("_")){
                 Category category = Category.valueOfLabel(data);
-                String horoscope = getHoroscope(REQUESTS.get(user).get(messageId), category);
+                String horoscope = getHoroscope(REQUESTS.get(user.getId()).get(messageId), category);
 
                 EditMessageText editMessageText = new EditMessageText();
                 editMessageText.setChatId(callbackquery.getMessage().getChatId());
@@ -122,17 +143,17 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
     /**
      * Add user's request to map of requests history to be able to edit messages in the future.
-     * @param user who send a message
-     * @param messageId unique id of the sent message
+     * @param userId unique id of message sender
+     * @param messageId unique message id
      * @param zodiac the user was interested in
      */
-    private void addRequest(User user, int messageId, Zodiac zodiac){
-        Map<Integer, Zodiac> map = REQUESTS.get(user);
-        if (map == null){
+    private void addRequest(int userId, int messageId, Zodiac zodiac){
+        Map<Integer, Zodiac> map = REQUESTS.get(userId);
+        if (map == null || map.size() > 5){
             map = new HashMap<>();
         }
         map.put(messageId+1, zodiac);
-        REQUESTS.put(user, map);
+        REQUESTS.put(userId, map);
     }
 
     /**
@@ -219,7 +240,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         String url = String.format(zodiac.url, category.id);
 
         try {
-            Document doc = Jsoup.connect(url).get();
+            org.jsoup.nodes.Document doc = Jsoup.connect(url).get();
             Elements elements = doc.select("li.multicol_item > p");
             responseBuilder.append(elements.first().text());
         } catch (IOException e) {
@@ -239,31 +260,48 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         return TOKEN;
     }
 
-    public static void main(String[] args) {
-        LOGGER.info("Telegram Horoscope Bot started to configure...");
+    private void updateDB(User user){
+        MongoCollection<Document> collection = database.getCollection("users");
+        Bson filter = Filters.eq("user_id", user.getId());
+        Bson update = Updates.inc("requestCount", 1);
 
-        String propsPath = "src/main/resources/botconfig.properties";
+        Document updateDoc = collection.findOneAndUpdate(filter, update);
+
+        if (updateDoc == null){
+            Document document = new Document();
+            document.put("user_id", user.getId());
+            document.put("firstName", user.getFirstName());
+            document.put("lastName", user.getLastName());
+            document.put("username", user.getUserName());
+            document.put("requestCount", 1);
+
+            collection.insertOne(document);
+        }
+    }
+
+    public static void main(String[] args) {
         Properties props = new Properties();
         try {
-            props.load(new FileReader(propsPath));
+            props.load(new FileReader(PROPERTIES_PATH));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         String token = props.getProperty("token");
         String username = props.getProperty("username");
-        String logPath = props.getProperty("logPath");
+        String mongoUri = props.getProperty("mongoUri");
+
+        LOGGER.info("Telegram Horoscope Bot is initialization...");
 
         ApiContextInitializer.init();
 
         TelegramBotsApi botsApi = new TelegramBotsApi();
         try {
-            botsApi.registerBot(new HoroscopeBot(token, username, logPath));
+            botsApi.registerBot(new HoroscopeBot(token, username, mongoUri));
         } catch (TelegramApiRequestException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING,e.getMessage());
         }
-
-        LOGGER.info("Bot has been successfully configured.");
+        LOGGER.info("Telegram Horoscope Bot was successfully initialized.");
         LOGGER.info("Bot is running...");
     }
 }
