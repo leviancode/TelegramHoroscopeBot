@@ -1,10 +1,10 @@
 
 # IntelliJ project files
-.idea/
-src/test/
-target/
-out/
-gen/
+/.idea/
+/src/test/
+/target/
+/out/
+/gen/
 /shelf/
 /workspace.xml
 # src/main/resources/botconfig.properties
