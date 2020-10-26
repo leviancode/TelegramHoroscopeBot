@@ -1,0 +1,1 @@
+web: java -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
