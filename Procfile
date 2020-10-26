@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -cp target/classes:target/dependency/* com.leviancode.horoscopebot.HoroscopeBot
+web: java $JAVA_OPTS -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
