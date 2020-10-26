@@ -1,1 +1,1 @@
-web: java -Dserver.port=${PORT:5000} $JAVA_OPTS -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
+web: java $JAVA_OPTS -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar $PORT
