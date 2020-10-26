@@ -54,7 +54,6 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
     // Map to store last user's request. Key: userId, value: map: message id + zodiac
     private Map<Integer, Map<Integer, Zodiac>> REQUESTS = new HashMap<>();
-    private static final Logger LOGGER = Logger.getLogger(HoroscopeBot.class.getSimpleName());
     private MongoDatabase database;
 
     private long requestCount = 0;
@@ -121,7 +120,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
             try {
                 execute(sendMessage); // Call method to send the message
             } catch (TelegramApiException e) {
-                LOGGER.log(Level.WARNING,e.getMessage());
+                e.printStackTrace();
             }
             logging(user, request);
 
@@ -152,7 +151,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
                 try {
                     execute(editMessageText);
                 } catch (TelegramApiException e) {
-                    LOGGER.log(Level.WARNING,e.getMessage());
+                    e.printStackTrace();
                 }
                 logging(user, data);
             }
@@ -181,7 +180,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
      */
     private void logging (User user, String request){
         requestCount++;
-        LOGGER.info(String.format("New request '%s' from user '%s'. Request count: %d. User count: %d",
+        System.out.println(String.format("New request '%s' from user '%s'. Request count: %d. User count: %d",
                 request,
                 (user.getUserName() != null ? user.getUserName() : user.getFirstName()),
                 requestCount,
@@ -262,7 +261,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
             Elements elements = doc.select("li.multicol_item > p");
             responseBuilder.append(elements.first().text());
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING,e.getMessage());
+            e.printStackTrace();
         }
 
         return responseBuilder.toString();
@@ -309,7 +308,7 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         String username = props.getProperty("username");
         String mongoUri = props.getProperty("mongoUri");
 
-        LOGGER.info("Telegram Horoscope Bot is initialization...");
+        System.out.println("Telegram Horoscope Bot is initialization...");
 
         ApiContextInitializer.init();
 
@@ -317,9 +316,9 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         try {
             botsApi.registerBot(new HoroscopeBot(token, username, mongoUri));
         } catch (TelegramApiRequestException e) {
-            LOGGER.log(Level.WARNING,e.getMessage());
+            e.printStackTrace();
         }
-        LOGGER.info("Telegram Horoscope Bot was successfully initialized.");
-        LOGGER.info("Bot is running...");
+        System.out.println("Telegram Horoscope Bot was successfully initialized.");
+        System.out.println("Bot is running...");
     }
 }
