@@ -1,1 +1,1 @@
-web: java -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
+web: java -Dserver.port=$PORT $JAVA_OPTS -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
