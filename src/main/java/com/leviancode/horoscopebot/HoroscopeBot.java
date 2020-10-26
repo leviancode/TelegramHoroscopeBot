@@ -44,7 +44,8 @@ import java.util.logging.Logger;
  */
 
 public class HoroscopeBot extends TelegramLongPollingBot {
-    private static String PROPERTIES_PATH = "src/main/resources/botconfig.properties";
+    private final DatabaseManager dbManager;
+    private final static String PROPERTIES_PATH = "src/main/resources/botconfig.properties";
 
     private final String TOKEN;
     private final String USERNAME;
@@ -68,21 +69,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         this.TOKEN = token;
         this.USERNAME = username;
 
-        setupMongoDB(mongoUri);
-    }
-
-    private void setupMongoDB(String mongoUri){
-        MongoClientURI uri = new MongoClientURI(mongoUri);
-
-        MongoClient mongoClient = new MongoClient(uri);
-        database = mongoClient.getDatabase("horoscopeBot");
-
-        try {
-            database.getCollection("users");
-        } catch (IllegalArgumentException e) {
-            database.createCollection("users");
-        }
-
+        dbManager = new DatabaseManager(mongoUri);
+        new Thread(dbManager).start();
     }
 
     @Override
@@ -111,7 +99,8 @@ public class HoroscopeBot extends TelegramLongPollingBot {
                     sendMessage.setParseMode(ParseMode.MARKDOWN);
 
                     addRequest(user.getId(), message.getMessageId(), zodiac);
-                    updateDB(user);
+
+                    dbManager.insertData(user);
                 }catch (IllegalArgumentException e){
                     sendMessage.setText(OOPS);
                 }
@@ -275,25 +264,6 @@ public class HoroscopeBot extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
         return TOKEN;
-    }
-
-    private void updateDB(User user){
-        MongoCollection<Document> collection = database.getCollection("users");
-        Bson filter = Filters.eq("user_id", user.getId());
-        Bson update = Updates.inc("requestCount", 1);
-
-        Document updateDoc = collection.findOneAndUpdate(filter, update);
-
-        if (updateDoc == null){
-            Document document = new Document();
-            document.put("user_id", user.getId());
-            document.put("firstName", user.getFirstName());
-            document.put("lastName", user.getLastName());
-            document.put("username", user.getUserName());
-            document.put("requestCount", 1);
-
-            collection.insertOne(document);
-        }
     }
 
     public static void main(String[] args) {
