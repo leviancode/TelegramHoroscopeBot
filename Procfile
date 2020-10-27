@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -jar target/dependency/webapp-runner.jar --port $PORT
+web: java -jar target/HoroscopeBot-1.1-SNAPSHOT-jar-with-dependencies.jar
