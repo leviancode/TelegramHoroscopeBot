@@ -5,7 +5,7 @@ out/
 gen/
 shelf/
 workspace.xml
-#src/main/resources/botconfig.properties
+src/main/resources/botconfig.properties
 
 # Datasource local storage ignored files
 /dataSources/
