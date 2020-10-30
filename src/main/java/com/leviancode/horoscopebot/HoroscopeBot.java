@@ -30,6 +30,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +46,7 @@ import java.util.logging.Logger;
 
 public class HoroscopeBot extends TelegramLongPollingBot {
     private final DatabaseManager dbManager;
-    private final static String PROPERTIES_PATH = "src/main/resources/botconfig.properties";
+    private final static String PROPERTIES_PATH = "/botconfig.properties";
 
     private final String TOKEN;
     private final String USERNAME;
@@ -268,8 +269,9 @@ public class HoroscopeBot extends TelegramLongPollingBot {
 
     public static void main(String[] args) {
         Properties props = new Properties();
+        InputStream stream = HoroscopeBot.class.getResourceAsStream(PROPERTIES_PATH);
         try {
-            props.load(new FileReader(PROPERTIES_PATH));
+            props.load(stream);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -277,10 +279,6 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         String token = props.getProperty("token");
         String username = props.getProperty("username");
         String mongoUri = props.getProperty("mongoUri");
-
-        System.out.println(token);
-        System.out.println(username);
-        System.out.println(mongoUri);
 
         System.out.println("Telegram Horoscope Bot is initialization...");
 
