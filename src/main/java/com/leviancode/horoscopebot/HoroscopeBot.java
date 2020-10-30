@@ -278,6 +278,10 @@ public class HoroscopeBot extends TelegramLongPollingBot {
         String username = props.getProperty("username");
         String mongoUri = props.getProperty("mongoUri");
 
+        System.out.println(token);
+        System.out.println(username);
+        System.out.println(mongoUri);
+
         System.out.println("Telegram Horoscope Bot is initialization...");
 
         ApiContextInitializer.init();

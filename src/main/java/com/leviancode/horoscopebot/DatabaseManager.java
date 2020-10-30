@@ -11,16 +11,16 @@ import org.bson.conversions.Bson;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class DatabaseManager implements Runnable{
-    private final MongoDatabase database;
-    private final ArrayBlockingQueue<User> queue;
+    private MongoDatabase database;
+    private BlockingQueue<User> queue;
 
     public DatabaseManager(String mongoUri) {
-        MongoClientURI uri = new MongoClientURI(mongoUri);
         queue = new ArrayBlockingQueue<>(20);
-
+        MongoClientURI uri = new MongoClientURI(mongoUri);
         MongoClient mongoClient = new MongoClient(uri);
         database = mongoClient.getDatabase("horoscopeBot");
 
@@ -33,6 +33,7 @@ public class DatabaseManager implements Runnable{
 
     @Override
     public void run() {
+        System.out.println("DB Manager running...");
         MongoCollection<Document> collection = database.getCollection("users");
         while (true){
             try {
